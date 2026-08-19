@@ -4,6 +4,7 @@ import dev.aryank.promptcanvas.dto.project.ProjectRequest;
 import dev.aryank.promptcanvas.dto.project.ProjectResponse;
 import dev.aryank.promptcanvas.dto.project.ProjectSummaryResponse;
 import dev.aryank.promptcanvas.service.ProjectService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,13 +20,13 @@ public class ProjectController {
     private final ProjectService projectService;
 
     @PostMapping
-    public ResponseEntity<ProjectResponse> createProject(@RequestBody ProjectRequest request){
+    public ResponseEntity<ProjectResponse> createProject(@RequestBody @Valid ProjectRequest request){
         Long userId = 1L;
         return ResponseEntity.status(HttpStatus.CREATED).body(projectService.createProject(request, userId));
     }
 
     @GetMapping
-    public ResponseEntity<List<ProjectSummaryResponse>>  getMyProjects() {
+    public ResponseEntity<List<ProjectSummaryResponse>> getMyProjects() {
         Long userId = 1L;
         return ResponseEntity.ok(projectService.getUserProjects(userId));
     }
@@ -38,7 +39,7 @@ public class ProjectController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<ProjectResponse> updateProject(@PathVariable Long id,
-                                                         @RequestBody ProjectRequest request){
+                                                         @RequestBody @Valid ProjectRequest request){
         Long userId = 1L;
         return ResponseEntity.ok(projectService.updateProject(id, request, userId));
     }

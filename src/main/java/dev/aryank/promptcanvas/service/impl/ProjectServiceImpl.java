@@ -5,6 +5,7 @@ import dev.aryank.promptcanvas.dto.project.ProjectResponse;
 import dev.aryank.promptcanvas.dto.project.ProjectSummaryResponse;
 import dev.aryank.promptcanvas.entity.Project;
 import dev.aryank.promptcanvas.entity.User;
+import dev.aryank.promptcanvas.error.ResourceNotFoundException;
 import dev.aryank.promptcanvas.mapper.ProjectMapper;
 import dev.aryank.promptcanvas.repository.ProjectRepository;
 import dev.aryank.promptcanvas.repository.UserRepository;
@@ -93,6 +94,7 @@ public class ProjectServiceImpl implements ProjectService {
 
 //    ///Internal functions
     public Project getAccessibleProjectById(Long id, Long userId) {
-        return projectRepository.findAccessibleProjectById(id, userId).orElseThrow();
+        return projectRepository.findAccessibleProjectById(id, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
     }
 }
