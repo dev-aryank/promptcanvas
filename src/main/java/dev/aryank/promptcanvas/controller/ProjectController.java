@@ -18,6 +18,12 @@ public class ProjectController {
 
     private final ProjectService projectService;
 
+    @PostMapping
+    public ResponseEntity<ProjectResponse> createProject(@RequestBody ProjectRequest request){
+        Long userId = 1L;
+        return ResponseEntity.status(HttpStatus.CREATED).body(projectService.createProject(request, userId));
+    }
+
     @GetMapping
     public ResponseEntity<List<ProjectSummaryResponse>>  getMyProjects() {
         Long userId = 1L;
@@ -28,12 +34,6 @@ public class ProjectController {
     public ResponseEntity<ProjectResponse> getProject(@PathVariable Long id){
         Long userId = 1L;
         return ResponseEntity.ok(projectService.getUserProjectById(id, userId));
-    }
-
-    @PostMapping
-    public ResponseEntity<ProjectResponse> createProject(@RequestBody ProjectRequest request){
-        Long userId = 1L;
-        return ResponseEntity.status(HttpStatus.CREATED).body(projectService.createProject(request, userId));
     }
 
     @PatchMapping("/{id}")

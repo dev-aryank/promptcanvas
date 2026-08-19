@@ -1,6 +1,22 @@
 spring:
   application:
     name: promptcanvas
+
+  datasource:
+    url: jdbc:postgresql://localhost:9000/promptcanvasDB
+    username: testUser
+    password: password
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
 server:
   servlet:
     context-path: /api
+

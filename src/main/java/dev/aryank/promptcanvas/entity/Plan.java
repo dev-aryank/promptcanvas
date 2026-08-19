@@ -11,12 +11,9 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity
 @Getter
 @Setter
 public class Plan {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     Long id;
 
     String name;
