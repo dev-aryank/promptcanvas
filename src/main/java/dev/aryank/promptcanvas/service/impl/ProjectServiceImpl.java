@@ -15,6 +15,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -55,18 +56,43 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public ProjectResponse getUserProjectById(Long id, Long userId) {
-        Project project = projectRepository.findById(id).orElseThrow();
-        if (!project.getOwner().getId().equals(userId)) {throw new RuntimeException("User does not own this project");}
+
+        Project project = getAccessibleProjectById(id, userId);
+
+//        Project project = projectRepository.findById(id).orElseThrow();
+//        if (!project.getOwner().getId().equals(userId)) {throw new RuntimeException("User does not own this project");}
         return projectMapper.toProjectResponse(project);
     }
 
     @Override
     public ProjectResponse updateProject(Long id, ProjectRequest request, Long userId) {
-        return null;
+        Project project = getAccessibleProjectById(id, userId);
+
+        if (!project.getOwner().getId().equals(userId)) {
+            throw new RuntimeException("You are not allowed to update the name of this project");
+        }
+
+        project.setName(request.name());
+        project = projectRepository.save(project);
+
+        return  projectMapper.toProjectResponse(project);
+
     }
 
     @Override
     public void softDelete(Long id, Long userId) {
+        Project project = getAccessibleProjectById(id, userId);
 
+        if (!project.getOwner().getId().equals(userId)) {
+            throw new RuntimeException("You are not allowed to delete this project");
+        }
+        project.setDeletedAt(Instant.now());
+        projectRepository.save(project);
+    }
+
+
+//    ///Internal functions
+    public Project getAccessibleProjectById(Long id, Long userId) {
+        return projectRepository.findAccessibleProjectById(id, userId).orElseThrow();
     }
 }

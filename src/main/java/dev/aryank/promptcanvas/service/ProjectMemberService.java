@@ -13,5 +13,5 @@ public interface ProjectMemberService {
 
     MemberResponse updateMemberRole(Long id, Long memberId, UpdateMemberRoleRequest role, Long userId);
 
-    MemberResponse deleteProjectMember(Long id, Long memberId, Long userId);
+    void removeProjectMember(Long id, Long memberId, Long userId);
 }
