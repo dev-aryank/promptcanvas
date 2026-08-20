@@ -16,3 +16,6 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+jwt:
+  secret-key: promptcanvas-dev-jwt-secret-key-not-for-production-use-2026
+
