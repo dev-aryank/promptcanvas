@@ -17,18 +17,18 @@ public class BillingController {
     private final SubscriptionService subscriptionService;
     private final PlanService planService;
 
-    @GetMapping("/plans")
+    @GetMapping("/api/plans")
     public ResponseEntity<List<PlanResponse>> getAllPlans(){
         return ResponseEntity.ok(planService.getAllActivePlans());
     }
 
-    @GetMapping("/me/subscription")
+    @GetMapping("/api/me/subscription")
     public ResponseEntity<SubscriptionResponse> getMySubscription(){
         Long userId = 1L;
         return ResponseEntity.ok(subscriptionService.getCurrentSubscription(userId));
     }
 
-    @PostMapping("/stripe/checkout")
+    @PostMapping("/api/stripe/checkout")
     public ResponseEntity<CheckoutResponse> createCheckoutResponse(@RequestBody CheckoutRequest request){
         Long userId = 1L;
         return ResponseEntity.ok(subscriptionService.createCheckoutSessionUrl(request, userId));

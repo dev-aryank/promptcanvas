@@ -4,9 +4,13 @@ import dev.aryank.promptcanvas.dto.project.ProjectRequest;
 import dev.aryank.promptcanvas.dto.project.ProjectResponse;
 import dev.aryank.promptcanvas.dto.project.ProjectSummaryResponse;
 import dev.aryank.promptcanvas.entity.Project;
+import dev.aryank.promptcanvas.entity.ProjectMember;
+import dev.aryank.promptcanvas.entity.ProjectMemberId;
 import dev.aryank.promptcanvas.entity.User;
+import dev.aryank.promptcanvas.enums.ProjectRole;
 import dev.aryank.promptcanvas.error.ResourceNotFoundException;
 import dev.aryank.promptcanvas.mapper.ProjectMapper;
+import dev.aryank.promptcanvas.repository.ProjectMemberRepository;
 import dev.aryank.promptcanvas.repository.ProjectRepository;
 import dev.aryank.promptcanvas.repository.UserRepository;
 import dev.aryank.promptcanvas.service.ProjectService;
@@ -29,39 +33,43 @@ public class ProjectServiceImpl implements ProjectService {
     ProjectRepository projectRepository;
     UserRepository userRepository;
     ProjectMapper projectMapper;
+    ProjectMemberRepository projectMemberRepository;
 
     @Override
 
     public ProjectResponse createProject(ProjectRequest request, Long userId) {
         User owner = userRepository.findById(userId)
-                .orElseThrow();
+                .orElseThrow(() -> new ResourceNotFoundException("user", userId.toString()));
         Project project = Project.builder()
                 .name(request.name())
-                .owner(owner)
                 .isPublic(false)
                 .build();
 
         project = projectRepository.save(project);
+
+        ProjectMemberId projectMemberId = new ProjectMemberId(project.getId(), userId);
+        ProjectMember projectMember = ProjectMember.builder()
+                .id(projectMemberId)
+                .projectRole(ProjectRole.OWNER)
+                .acceptedAt(Instant.now())
+                .invitedAt(Instant.now())
+                .project(project)
+                .user(owner)
+                .build();
+        projectMemberRepository.save(projectMember);
+
         return  projectMapper.toProjectResponse(project);
 
     }
 
     @Override
     public List<ProjectSummaryResponse> getUserProjects(Long userId) {
-//        return projectRepository.findAllAccessibleByUser(userId)
-//                .stream()
-//                .map(projectMapper::toProjectSummaryResponse)
-//                .collect(Collectors.toList());
         return projectMapper.toListOfProjectSummaryResponse(projectRepository.findAllAccessibleByUser(userId));
     }
 
     @Override
     public ProjectResponse getUserProjectById(Long id, Long userId) {
-
         Project project = getAccessibleProjectById(id, userId);
-
-//        Project project = projectRepository.findById(id).orElseThrow();
-//        if (!project.getOwner().getId().equals(userId)) {throw new RuntimeException("User does not own this project");}
         return projectMapper.toProjectResponse(project);
     }
 
@@ -69,9 +77,6 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectResponse updateProject(Long id, ProjectRequest request, Long userId) {
         Project project = getAccessibleProjectById(id, userId);
 
-        if (!project.getOwner().getId().equals(userId)) {
-            throw new RuntimeException("You are not allowed to update the name of this project");
-        }
 
         project.setName(request.name());
         project = projectRepository.save(project);
@@ -84,9 +89,6 @@ public class ProjectServiceImpl implements ProjectService {
     public void softDelete(Long id, Long userId) {
         Project project = getAccessibleProjectById(id, userId);
 
-        if (!project.getOwner().getId().equals(userId)) {
-            throw new RuntimeException("You are not allowed to delete this project");
-        }
         project.setDeletedAt(Instant.now());
         projectRepository.save(project);
     }

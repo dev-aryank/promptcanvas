@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/usage")
+@RequestMapping("/api/usage")
 public class UsageController {
 
     private final UsageService usageService;
