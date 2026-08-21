@@ -16,6 +16,7 @@ import dev.aryank.promptcanvas.service.ProjectMemberService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
     AuthUtil authUtil;
 
     @Override
+    @PreAuthorize("@security.canViewMembers(#id)")
     public List<MemberResponse> getProjectMembers(long id) {
         Long userId = authUtil.getCurrentUserId();
         Project project = getAccessibleProjectById(id, userId);
@@ -48,6 +50,7 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
     }
 
     @Override
+    @PreAuthorize("@security.canManageMembers(#id)")
     public MemberResponse inviteMember(Long id, InviteMemberRequest inviteMemberRequest) {
         Long userId = authUtil.getCurrentUserId();
         Project project = getAccessibleProjectById(id, userId);
@@ -77,6 +80,7 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
     }
 
     @Override
+    @PreAuthorize("@security.canManageMembers(#id)")
     public MemberResponse updateMemberRole(Long id, Long memberId, UpdateMemberRoleRequest request) {
         Long userId = authUtil.getCurrentUserId();
         Project project = getAccessibleProjectById(id, userId);
@@ -92,9 +96,14 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
     }
 
     @Override
+    @PreAuthorize("@security.canManageMembers(#id)")
     public void removeProjectMember(Long id, Long memberId) {
         Long userId = authUtil.getCurrentUserId();
         Project project = getAccessibleProjectById(id, userId);
+
+        if (userId.equals(memberId)) {
+            throw new IllegalArgumentException("You cannot remove yourself");
+        }
 
         ProjectMemberId projectMemberId = new ProjectMemberId(id, memberId);
         if (!projectMemberRepository.existsById(projectMemberId)) {

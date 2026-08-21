@@ -32,7 +32,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                 AND EXISTS(
                     SELECT 1 FROM ProjectMember pm
                     WHERE pm.id.userId = :userId
-                    AND pm.id.projectId = p.projectId
+                    AND pm.id.projectId = :projectId
                 )
                 
 """)
