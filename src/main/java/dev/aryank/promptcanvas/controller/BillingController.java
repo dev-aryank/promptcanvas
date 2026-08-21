@@ -1,21 +1,31 @@
 package dev.aryank.promptcanvas.controller;
 
+import com.stripe.exception.SignatureVerificationException;
+import com.stripe.model.Event;
+import com.stripe.net.Webhook;
 import dev.aryank.promptcanvas.dto.subscription.*;
+import dev.aryank.promptcanvas.service.PaymentProcessor;
 import dev.aryank.promptcanvas.service.PlanService;
 import dev.aryank.promptcanvas.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-//@RequestMapping()
+@Slf4j
 @RequiredArgsConstructor
 public class BillingController {
 
     private final SubscriptionService subscriptionService;
     private final PlanService planService;
+    private final PaymentProcessor paymentProcessor;
+
+    @Value("${stripe.webhook.secret}")
+    private String stripeWebhookSecret;
 
     @GetMapping("/api/plans")
     public ResponseEntity<List<PlanResponse>> getAllPlans(){
@@ -28,15 +38,29 @@ public class BillingController {
         return ResponseEntity.ok(subscriptionService.getCurrentSubscription(userId));
     }
 
-    @PostMapping("/api/stripe/checkout")
+    @PostMapping("/api/payments/checkout")
     public ResponseEntity<CheckoutResponse> createCheckoutResponse(@RequestBody CheckoutRequest request){
-        Long userId = 1L;
-        return ResponseEntity.ok(subscriptionService.createCheckoutSessionUrl(request, userId));
+        return ResponseEntity.ok(paymentProcessor.createCheckoutSessionUrl(request));
     }
 
-    @PostMapping("/stripe/portal")
+    @PostMapping("/api/payments/portal")
     public ResponseEntity<PortalResponse> openCustomerPortal(){
         Long userId = 1L;
-        return ResponseEntity.ok(subscriptionService.openCustomerPortal(userId));
+        return ResponseEntity.ok(paymentProcessor.openCustomerPortal(userId));
     }
+
+//    @PostMapping("/webhooks/payment")
+//    public ResponseEntity<String> handlePaymentWebhooks(@RequestBody String payload,
+//                                                        @RequestHeader("Stripe-Signature")  String sigHeader){
+//
+//        try {
+//            Event event = Webhook.constructEvent(payload, sigHeader, stripeWebhookSecret);
+//
+//
+//
+//        } catch (SignatureVerificationException e) {
+//            throw new RuntimeException(e);
+//        }
+//
+//    }
 }

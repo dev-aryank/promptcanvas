@@ -19,3 +19,12 @@ spring:
 jwt:
   secret-key: promptcanvas-dev-jwt-secret-key-not-for-production-use-2026
 
+stripe:
+  api:
+    secret: ${STRIPE_SECRET_KEY}
+  webhook:
+    secret: ${STRIPE_WEBHOOK_SECRET_KEY}
+
+client:
+  url: http://localhost:8080 # Change it to your frontend url (using for success/failure of payment through stripe)
+
