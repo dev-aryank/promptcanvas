@@ -1,6 +1,7 @@
 package dev.aryank.promptcanvas.service.impl;
 
 import com.stripe.exception.StripeException;
+import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
 import dev.aryank.promptcanvas.dto.subscription.CheckoutRequest;
@@ -16,6 +17,8 @@ import dev.aryank.promptcanvas.service.PaymentProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 
 @Service
@@ -79,5 +82,10 @@ public class StripePaymentProcessor implements PaymentProcessor {
     @Override
     public PortalResponse openCustomerPortal(Long userId) {
         return null;
+    }
+
+    @Override
+    public void handleWebhookEvent(String type, StripeObject stripeObject, Map<String, String> metadata) {
+
     }
 }
