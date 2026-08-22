@@ -8,6 +8,7 @@ import dev.aryank.promptcanvas.entity.ProjectMember;
 import dev.aryank.promptcanvas.entity.ProjectMemberId;
 import dev.aryank.promptcanvas.entity.User;
 import dev.aryank.promptcanvas.enums.ProjectRole;
+import dev.aryank.promptcanvas.error.BadRequestException;
 import dev.aryank.promptcanvas.error.ResourceNotFoundException;
 import dev.aryank.promptcanvas.mapper.ProjectMapper;
 import dev.aryank.promptcanvas.repository.ProjectMemberRepository;
@@ -15,6 +16,7 @@ import dev.aryank.promptcanvas.repository.ProjectRepository;
 import dev.aryank.promptcanvas.repository.UserRepository;
 import dev.aryank.promptcanvas.security.AuthUtil;
 import dev.aryank.promptcanvas.service.ProjectService;
+import dev.aryank.promptcanvas.service.SubscriptionService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -36,9 +38,15 @@ public class ProjectServiceImpl implements ProjectService {
     ProjectMapper projectMapper;
     ProjectMemberRepository projectMemberRepository;
     AuthUtil authUtil;
+    SubscriptionService subscriptionService;
 
     @Override
     public ProjectResponse createProject(ProjectRequest request) {
+
+        if (!subscriptionService.canCreateNewProject()){
+            throw new BadRequestException("User can't create a new project with current subscription. Upgrade Now!");
+        }
+
         Long userId = authUtil.getCurrentUserId();
 //        User owner = userRepository.findById(userId)
 //                .orElseThrow(() -> new ResourceNotFoundException("user", userId.toString()));

@@ -10,6 +10,7 @@ import dev.aryank.promptcanvas.dto.subscription.PortalResponse;
 import dev.aryank.promptcanvas.entity.Plan;
 import dev.aryank.promptcanvas.entity.User;
 import dev.aryank.promptcanvas.enums.SubscriptionStatus;
+import dev.aryank.promptcanvas.error.BadRequestException;
 import dev.aryank.promptcanvas.error.ResourceNotFoundException;
 import dev.aryank.promptcanvas.repository.PlanRepository;
 import dev.aryank.promptcanvas.repository.UserRepository;
@@ -87,7 +88,28 @@ public class StripePaymentProcessor implements PaymentProcessor {
 
     @Override
     public PortalResponse openCustomerPortal() {
-        return null;
+        Long userId = authUtil.getCurrentUserId();
+        User user = getUser(userId);
+
+        String stripeCustomerId = user.getStripeCustomerId();
+
+        if(stripeCustomerId == null || stripeCustomerId.isEmpty()) {
+            throw new BadRequestException("User doesn't have a Stripe Customer Id, UserId" + userId);
+        }
+
+        try {
+            var portalSession = com.stripe.model.billingportal.Session.create(
+                    com.stripe.param.billingportal.SessionCreateParams.builder()
+                            .setCustomer(stripeCustomerId)
+                            .setReturnUrl(frontendUrl)
+                            .build()
+            );
+
+            return new PortalResponse(portalSession.getUrl());
+
+        } catch (StripeException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -118,7 +140,7 @@ public class StripePaymentProcessor implements PaymentProcessor {
         String customerId = session.getCustomer();
 
         User user = getUser(userId);
-        if (user.getStripeCustomerId() == null){
+        if (user.getStripeCustomerId() == null || user.getStripeCustomerId().isEmpty()) {
             user.setStripeCustomerId(customerId);
             userRepository.save(user);
         }
@@ -145,8 +167,15 @@ public class StripePaymentProcessor implements PaymentProcessor {
 
         Long planId = resolvePlanId(item.getPrice());
 
+        boolean scheduledToCancel =
+                Boolean.TRUE.equals(subscription.getCancelAtPeriodEnd())
+                        || subscription.getCancelAt() != null;
+
         subscriptionService.updateSubscription(
-                subscription.getId(), status, periodStart, periodEnd, subscription.getCancelAtPeriodEnd(), planId
+                subscription.getId(), status, periodStart, periodEnd, scheduledToCancel, planId
+
+//        subscriptionService.updateSubscription(
+//                subscription.getId(), status, periodStart, periodEnd, subscription.getCancelAtPeriodEnd(), planId
         );
 
     }
