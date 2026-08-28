@@ -35,3 +35,7 @@ stripe:
 client:
   url: http://localhost:8080 # Change it to your frontend url (using for success/failure of payment through stripe)
 
+logging:
+  level:
+    org.springframework.ai:
+      chat.client: DEBUG

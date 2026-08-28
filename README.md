@@ -40,7 +40,7 @@ Live Preview
 I am building the backend first so the AI layer has a proper system around it instead of being just a wrapper around an LLM call.
 
 <p align="center">
-  <img src="docs/diagrams/High-Level%20System%20Flow%20Diagram.png" alt="PromptCanvas High-Level Flow" />
+  <img src="docs/diagrams/promptcanvas-high-level-system-flow.png" alt="PromptCanvas High-Level Flow" />
 </p>
 
 ---
@@ -60,10 +60,10 @@ I am building the backend first so the AI layer has a proper system around it in
 * Subscription and billing-period tracking
 * Stripe webhook verification and event handling
 * Spring AI integration
-* Streaming AI responses using WebFlux + SSE
 
 ### In progress / planned
 
+* Streaming AI responses using WebFlux + SSE
 * Conversational code generation
 * Project-aware AI context
 * File-tree/context advisor
@@ -114,24 +114,6 @@ The backend creates Checkout sessions, stores subscription state locally, and us
 * Stripe Customer Portal
 * Stripe Webhooks
 
----
-
-## Project Structure
-
-```text
-src/main/java/dev/aryank/promptcanvas
-│
-├── controller
-├── service
-├── repository
-├── entity
-├── dto
-├── mapper
-├── security
-├── config
-├── enums
-└── error
-```
 
 ---
 

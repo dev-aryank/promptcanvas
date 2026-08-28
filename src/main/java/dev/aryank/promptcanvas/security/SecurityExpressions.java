@@ -16,22 +16,19 @@ public class SecurityExpressions {
     private boolean hasPermission(Long projectId, ProjectPermission permission) {
         Long userId = authUtil.getCurrentUserId();
 
-        return projectMemberRepository.findRoleByProjectIdAndUserId(projectId, userId)
-                .map(role -> role.getPermissions().contains(permission))
-                .orElse(false);
+        return projectMemberRepository.findRoleByProjectIdAndUserId(projectId, userId).map(role -> role.getPermissions().contains(permission)).orElse(false);
     }
 
     public boolean canViewProject(Long projectId) {
         return hasPermission(projectId, ProjectPermission.VIEW);
     }
 
-
     public boolean canEditProject(Long projectId) {
         return hasPermission(projectId, ProjectPermission.EDIT);
     }
 
     public boolean canDeleteProject(Long projectId) {
-         return hasPermission(projectId, ProjectPermission.DELETE);
+        return hasPermission(projectId, ProjectPermission.DELETE);
     }
 
     public boolean canViewMembers(Long projectId) {
