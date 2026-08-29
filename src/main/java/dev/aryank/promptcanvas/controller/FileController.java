@@ -3,7 +3,7 @@ package dev.aryank.promptcanvas.controller;
 
 import dev.aryank.promptcanvas.dto.project.FileContentResponse;
 import dev.aryank.promptcanvas.dto.project.FileNode;
-import dev.aryank.promptcanvas.service.FileService;
+import dev.aryank.promptcanvas.service.ProjectFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,18 +17,18 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/api/projects/{id}/files")
 public class FileController {
-    private final FileService fileService;
+    private final ProjectFileService projectFileService;
 
     @GetMapping
     public ResponseEntity<List<FileNode>> getFileTree(@PathVariable Long id){
         Long userId = 1L;
-        return ResponseEntity.ok(fileService.getFileTree(id, userId));
+        return ResponseEntity.ok(projectFileService.getFileTree(id, userId));
     }
 
     @GetMapping("/{*path}")
     public ResponseEntity<FileContentResponse> getFile(@PathVariable Long id, @PathVariable String path){
         Long userId = 1L;
-        return ResponseEntity.ok(fileService.getFileContent(id, path, userId));
+        return ResponseEntity.ok(projectFileService.getFileContent(id, path, userId));
     }
 
 
