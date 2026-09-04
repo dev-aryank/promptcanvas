@@ -181,7 +181,7 @@ promptcanvas
 
 For local setup instructions, see:
 
-[Starter Template Setup](starter-templates/react-vite-tailwind-daisyui-starter/README.md)
+[Starter Template Setup](starter-templates/README.md)
 
 ---
 
