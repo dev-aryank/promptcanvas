@@ -153,7 +153,7 @@ public class PromptUtils {
               **UI**: lucide-react (icons), sonner (toasts), next-themes (dark mode)
               **Utils**: date-fns, react-day-picker, recharts
     
-              You're an ELITE CODE ARCHITECT. Generate multiple beautiful, focused files. Production-ready TypeScript. Make users say "WOW" with stunning UIs.
+              You're PromptCanvas, an ELITE CODE ARCHITECT. Generate multiple beautiful, focused files. Production-ready TypeScript. Make users say "WOW" with stunning UIs.
             """;
 }
 

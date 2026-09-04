@@ -1,6 +1,8 @@
 package dev.aryank.promptcanvas.service.impl;
 
 import dev.aryank.promptcanvas.llm.PromptUtils;
+import dev.aryank.promptcanvas.llm.advisors.FileTreeContextAdvisor;
+import dev.aryank.promptcanvas.llm.tools.CodeGenerationTools;
 import dev.aryank.promptcanvas.security.AuthUtil;
 import dev.aryank.promptcanvas.service.AiGenerationService;
 import dev.aryank.promptcanvas.service.ProjectFileService;
@@ -24,6 +26,7 @@ public class AiGenerationServiceImpl implements AiGenerationService {
     private final ChatClient chatClient;
     private final AuthUtil authUtil;
     private final ProjectFileService projectFileService;
+    private final FileTreeContextAdvisor  fileTreeContextAdvisor;
 
     private static final Pattern FILE_TAG_PATTERN = Pattern.compile("<file path=\"([^\"]+)\">(.*?)</file>", Pattern.DOTALL);
 
@@ -40,11 +43,15 @@ public class AiGenerationServiceImpl implements AiGenerationService {
 
         StringBuilder fullResponseBuffer = new StringBuilder();
 
+        CodeGenerationTools codeGenerationTools = new CodeGenerationTools(projectFileService, projectId);
+
         return chatClient.prompt()
                 .system(PromptUtils.CODE_GENERATION_SYSTEM_PROMPT)
                 .user(userMessage)
+                .tools(codeGenerationTools)
                 .advisors(advisorSpec -> {
                             advisorSpec.params(advisorParams);
+                            advisorSpec.advisors(fileTreeContextAdvisor);
                         }
                 )
                 .stream()
@@ -60,7 +67,7 @@ public class AiGenerationServiceImpl implements AiGenerationService {
                     });
 
                 })
-                .doOnError(error -> log.error("Error during streaming for projectID: "+ projectId))
+                .doOnError(error -> log.error("Error during streaming for projectID: {}", projectId))
                 .map(response -> response.getResult().getOutput().getText());
     }
 

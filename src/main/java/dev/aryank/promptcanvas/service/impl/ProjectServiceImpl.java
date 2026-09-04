@@ -16,6 +16,7 @@ import dev.aryank.promptcanvas.repository.ProjectRepository;
 import dev.aryank.promptcanvas.repository.UserRepository;
 import dev.aryank.promptcanvas.security.AuthUtil;
 import dev.aryank.promptcanvas.service.ProjectService;
+import dev.aryank.promptcanvas.service.ProjectTemplateService;
 import dev.aryank.promptcanvas.service.SubscriptionService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class ProjectServiceImpl implements ProjectService {
     ProjectMemberRepository projectMemberRepository;
     AuthUtil authUtil;
     SubscriptionService subscriptionService;
+    ProjectTemplateService projectTemplateService;
 
     @Override
     public ProjectResponse createProject(ProjectRequest request) {
@@ -70,6 +72,8 @@ public class ProjectServiceImpl implements ProjectService {
                 .user(owner)
                 .build();
         projectMemberRepository.save(projectMember);
+
+        projectTemplateService.initializeProjectFromTemplate(project.getId());
 
         return  projectMapper.toProjectResponse(project);
 

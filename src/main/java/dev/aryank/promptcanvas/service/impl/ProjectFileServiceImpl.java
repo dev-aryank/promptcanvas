@@ -9,6 +9,7 @@ import dev.aryank.promptcanvas.mapper.ProjectFileMapper;
 import dev.aryank.promptcanvas.repository.ProjectFileRepository;
 import dev.aryank.promptcanvas.repository.ProjectRepository;
 import dev.aryank.promptcanvas.service.ProjectFileService;
+import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import lombok.RequiredArgsConstructor;
@@ -36,16 +37,34 @@ public class ProjectFileServiceImpl implements ProjectFileService {
     @Value("${minio.project-bucket}")
     private String projectBucket;
 
+    private static final String BUCKET_NAME = "promptcanvas";
+
     @Override
-    public List<FileNode> getFileTree(Long id, Long userId) {
+    public List<FileNode> getFileTree(Long id) {
 
         List<ProjectFile> projectFileList = projectFileRepository.findByProjectId(id);
         return projectFileMapper.toListOfFileNodes(projectFileList);
     }
 
     @Override
-    public FileContentResponse getFileContent(Long id, String path, Long userId) {
-        return null;
+    public FileContentResponse getFileContent(Long id, String path) {
+        String objectName = id + "/" + path;
+
+        try (
+                InputStream is = minioClient.getObject(
+                        GetObjectArgs.builder()
+                                .bucket(BUCKET_NAME)
+                                .object(objectName)
+                                .build()
+                )
+        ) {
+            String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            return new FileContentResponse(path, content);
+
+        } catch (Exception e) {
+            log.error("Failed to read file: {}/{}", id, path, e);
+            throw new RuntimeException("Failed to read file content", e);
+        }
     }
 
     @Override
