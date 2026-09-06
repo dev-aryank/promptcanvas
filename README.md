@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  Describe an app in natural language, generate or modify its code through conversation, and eventually run it with a live preview.
+  Describe an app in natural language, generate or modify its code through conversation, and turn it into a live running application.
 </p>
 
 <p align="center">
@@ -24,7 +24,7 @@
 
 PromptCanvas is an AI-powered application builder inspired by tools like Lovable and Bolt.
 
-The idea is simple: describe what you want to build, let the AI generate the application, and then continue modifying that project through conversation.
+The idea is simple: describe what you want to build, let the AI generate the application, and then continue modifying the same project through conversation.
 
 ```text
 User Prompt
@@ -32,6 +32,8 @@ User Prompt
 Project Context + File Tree
     ↓
 AI Generation + Tool Calling
+    ↓
+Structured Chat Events
     ↓
 Generated / Modified Files
     ↓
@@ -42,7 +44,11 @@ Execution Environment
 Live Preview
 ```
 
-I am building the backend first so the AI layer has a proper system around it instead of being just a wrapper around an LLM call.
+I started by building the backend so the AI layer has an actual system around it instead of being just a wrapper around an LLM API.
+
+The backend now handles authentication, authorization, subscriptions, project storage, AI generation, tool calling, project-aware context, chat persistence, and generated file updates.
+
+The next stage is connecting all of this to the frontend and building the runtime system that can automatically execute generated applications and display them as live previews.
 
 <p align="center">
   <img src="docs/diagrams/promptcanvas-high-level-system-flow.png" alt="PromptCanvas High-Level Flow" />
@@ -53,6 +59,8 @@ I am building the backend first so the AI layer has a proper system around it in
 ## Features
 
 ### Currently implemented
+
+#### Authentication & projects
 
 - JWT-based authentication with Spring Security
 - Project creation and management
@@ -72,71 +80,170 @@ I am building the backend first so the AI layer has a proper system around it in
 #### AI code generation
 
 - Spring AI integration through an OpenAI-compatible API
+- GPT-5.3 Codex through OpenRouter
 - Streaming AI responses using Reactor `Flux` + Server-Sent Events
 - Conversational code generation
 - Project-aware file-tree context
 - Custom Spring AI advisor for injecting the current project structure
 - Tool calling for reading existing project files before modifying them
-- Structured AI responses containing messages and generated files
-- Parsing generated files from the streamed response
-- Automatic persistence of generated/modified files
+- Structured AI generation protocol using `<message>`, `<tool>`, and `<file>` events
+- Complete-file generation instead of partial patches
+- Automatic parsing and persistence of generated/modified files
 
-#### Project files and templates
+#### AI chat & generation history
+
+- Per-project chat sessions
+- Persistent user and assistant messages
+- Ordered chat events for each assistant response
+- `MESSAGE`, `TOOL_LOG`, `FILE_EDIT`, and `THOUGHT` event handling
+- Parsing streamed LLM output into structured chat events
+- Tool activity stored alongside the generated response
+- Generated file edits connected to the assistant turn that produced them
+- Project chat-history retrieval API
+- Basic generation-duration tracking
+
+#### Project files & templates
 
 - MinIO-based project file storage
 - PostgreSQL metadata for project files
 - File-tree and file-content APIs
 - Preconfigured React starter template
-- Automatic starter-template initialization when a new project is created
-- Server-side copying of template files from the template bucket into a project-specific path
+- Automatic starter-template initialization when a project is created
+- Server-side copying of template files into project-specific storage
+- Generated file updates written directly back to the project in MinIO
 
-### Next
+### Currently working on
 
-The next part of the backend is mainly about completing the conversation lifecycle around the generation system:
+The backend generation pipeline is now largely in place.
 
-- Persisting AI chat events/messages and project chat history
-- Connecting the existing chat-session models to the generation flow
-- Tracking useful generation metadata and usage
-- Finishing a few smaller project/file APIs and backend edge cases
-- Improving the generation pipeline as more real project flows are tested
+The next stage is focused on two major pieces:
 
-After that, the main focus will move to the **execution and preview system**.
+**Frontend**
 
-The plan is to use Kubernetes to run generated applications in isolated environments and expose them through temporary preview URLs, so a user can see the generated application live while continuing to modify it through chat.
+- Building the PromptCanvas application interface
+- Streaming AI responses into the chat UI
+- Rendering message, tool, thought, and file-edit events
+- Project file browsing and editing experience
+- Connecting generated projects to their live previews
+
+**Execution & Live Preview**
+
+- Running generated applications automatically
+- Creating isolated runtime environments for projects
+- Kubernetes pod/container orchestration
+- Building and serving generated React applications
+- Managing preview lifecycle and status
+- Exposing running applications through temporary preview URLs
+- Updating the preview as the AI modifies project files
+
+The goal is to reach the complete loop:
+
+```text
+Describe
+   ↓
+Generate
+   ↓
+Run
+   ↓
+Preview
+   ↓
+Modify through chat
+   ↓
+Regenerate
+   ↓
+Updated preview
+```
 
 ---
 
 ## AI Code Generation Flow
 
-A generation request is not sent to the model blindly. PromptCanvas first gives the model context about the current project and lets it request existing files when needed.
+A generation request is not sent to the model blindly.
+
+PromptCanvas first gives the model information about the current project and allows it to inspect existing files before making changes.
 
 ```text
 User asks for a change
         ↓
+Authorization check
+        ↓
+Chat session created / loaded
+        ↓
 FileTreeContextAdvisor
         ↓
-Current project file tree is added to AI context
+Current project file tree added to AI context
         ↓
-LLM decides which existing files it needs
+LLM determines which existing files it needs
+        ↓
+<tool> event
         ↓
 read_files tool call
         ↓
-Files are fetched from MinIO
+Files fetched from MinIO
         ↓
-Contents are returned to the LLM
+Contents returned to the LLM
         ↓
-LLM generates complete file updates
+LLM plans the changes
         ↓
-Response is streamed to the client through SSE
+Complete updated files generated
         ↓
-<file> blocks are parsed
+Response streamed through SSE
         ↓
-Files are written back to MinIO
+Full response parsed into ChatEvents
         ↓
-ProjectFile metadata is updated in PostgreSQL
+FILE_EDIT events written to MinIO
+        ↓
+Chat messages + events persisted in PostgreSQL
 ```
 
-This keeps the model aware of the actual project instead of regenerating code without knowing what already exists.
+This means the model works with the actual state of the project instead of blindly regenerating files without knowing what already exists.
+
+---
+
+## Structured AI Responses
+
+PromptCanvas uses a small structured protocol around LLM responses so generation can be understood by both the backend and frontend.
+
+A response can contain events such as:
+
+```xml
+<tool args="src/App.tsx,src/App.css">
+Reading the existing application files...
+</tool>
+
+<message phase="planning">
+I'll update the main application layout and styling.
+</message>
+
+<file path="src/App.tsx">
+Complete updated file...
+</file>
+
+<file path="src/App.css">
+Complete updated file...
+</file>
+
+<message phase="completed">
+Updated the application layout and styling.
+</message>
+```
+
+The backend parses this response into ordered `ChatEvent`s.
+
+```text
+Assistant ChatMessage
+        │
+        ├── THOUGHT
+        ├── TOOL_LOG
+        ├── MESSAGE
+        ├── FILE_EDIT
+        ├── FILE_EDIT
+        └── MESSAGE
+```
+
+This lets the frontend eventually reconstruct the generation process instead of displaying the entire LLM response as one large block of text.
+
+It also keeps actual file modifications separate from conversational messages and tool activity.
 
 ---
 
@@ -163,6 +270,7 @@ The template is stored in MinIO and copied into a project-specific location when
 
 ```text
 promptcanvas-starter-projects
+
 └── react-vite-tailwind-daisyui-starter/
     ├── src/
     ├── public/
@@ -172,6 +280,7 @@ promptcanvas-starter-projects
               ↓ new project #12
 
 promptcanvas
+
 └── 12/
     ├── src/
     ├── public/
@@ -207,7 +316,7 @@ The backend creates Checkout sessions, stores subscription state locally, and us
 - Spring Data JPA
 - Hibernate
 - Spring AI
-- Reactor
+- Project Reactor
 - Server-Sent Events
 - MapStruct
 - Maven
@@ -220,9 +329,11 @@ The backend creates Checkout sessions, stores subscription state locally, and us
 **AI**
 
 - Spring AI
-- OpenRouter through an OpenAI-compatible API
+- OpenRouter
+- GPT-5.3 Codex
 - Tool calling
-- Project-aware context advisors
+- Custom project-context advisors
+- Structured LLM response parsing
 
 **Integrations**
 
@@ -230,7 +341,15 @@ The backend creates Checkout sessions, stores subscription state locally, and us
 - Stripe Customer Portal
 - Stripe Webhooks
 
-**Planned Runtime / Preview Infrastructure**
+**Frontend / Generated Applications**
+
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- daisyUI
+
+**Runtime / Preview — In Progress**
 
 - Docker
 - Kubernetes
@@ -255,7 +374,8 @@ spring:
     openai:
       api-key: ${OPENAI_API_KEY}
       base-url: https://openrouter.ai/api/v1
-      timeout: 300s
+      chat:
+        model: openai/gpt-5.3-codex
 ```
 
 You will also need:
@@ -316,20 +436,46 @@ I wanted to understand what actually sits behind:
 
 > "Describe an application and AI builds it."
 
-The LLM call itself is only one part of the problem.
+Calling an LLM is only one part of that problem.
 
-The rest involves project context, file handling, authentication, authorization, billing, tool calling, storage, conversation history, execution, isolation, and live previews.
+A real system also needs to deal with project context, existing files, authentication, permissions, billing, tool calling, storage, conversation history, streaming, execution, isolation, and live previews.
 
-PromptCanvas is my attempt at building that complete flow instead of stopping at the generation API.
+PromptCanvas is my attempt at building that complete system instead of stopping at the generation API.
 
 ---
 
 ## Project Status
 
-> 🚧 **PromptCanvas is still actively being built.**
+> 🚧 **PromptCanvas is actively being built.**
 
-The backend foundation, authentication, authorization, project system, subscriptions, starter-template system, MinIO file storage, AI streaming, project-aware context, tool calling, and the first working code-generation pipeline are now in place.
+The core backend flow is now working:
 
-Next I am completing the chat/event side of the AI workflow along with a few smaller backend pieces.
+```text
+Authentication
+      ↓
+Projects + Permissions
+      ↓
+Subscriptions
+      ↓
+Starter Project
+      ↓
+Project File Storage
+      ↓
+AI Context
+      ↓
+Tool Calling
+      ↓
+Code Generation
+      ↓
+SSE Streaming
+      ↓
+Chat Events + History
+      ↓
+Generated File Persistence
+```
 
-After that, the main focus will be the Kubernetes-based execution and live-preview system so generated projects can actually run and be viewed directly from PromptCanvas.
+The focus is now shifting to the **PromptCanvas frontend** and the **Kubernetes-based execution system**.
+
+The next major milestone is to take the code already being generated and stored by PromptCanvas, run it automatically inside an isolated environment, and display the result as a live preview.
+
+Once that is connected to the chat interface, PromptCanvas will have the full generate → run → preview → modify loop.
