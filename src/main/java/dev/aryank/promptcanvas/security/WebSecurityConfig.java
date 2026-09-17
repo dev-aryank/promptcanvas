@@ -36,6 +36,11 @@ public class WebSecurityConfig {
                         ).permitAll()
 
                         .requestMatchers("/api/auth/**", "/webhooks/**").permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 );
 
